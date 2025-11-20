@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - EDA Visualization Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: white !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            color: #4682b4;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-activity"></i> EDA Visualization Platform
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/about">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="content-card">
+                    <h1 class="mb-4"><i class="bi bi-info-circle"></i> About This Platform</h1>
+                    
+                    <h3>What is EDA?</h3>
+                    <p>
+                        <strong>Electrodermal Activity (EDA)</strong>, also known as Galvanic Skin Response (GSR), 
+                        measures the electrical conductance of the skin, which varies with moisture level. 
+                        EDA is widely used to measure:
+                    </p>
+                    <ul>
+                        <li><strong>Stress levels</strong> - Higher EDA indicates increased stress or arousal</li>
+                        <li><strong>Emotional responses</strong> - Peaks correspond to emotional events</li>
+                        <li><strong>Cognitive load</strong> - Mental effort affects skin conductance</li>
+                        <li><strong>Engagement</strong> - Attention and focus patterns</li>
+                    </ul>
+
+                    <h3 class="mt-4">Platform Features</h3>
+                    <div class="row mt-3">
+                        <div class="col-md-4 text-center mb-4">
+                            <i class="bi bi-cloud-upload feature-icon"></i>
+                            <h5 class="mt-3">Easy Upload</h5>
+                            <p>Drag & drop CSV files for instant analysis</p>
+                        </div>
+                        <div class="col-md-4 text-center mb-4">
+                            <i class="bi bi-graph-up feature-icon"></i>
+                            <h5 class="mt-3">Interactive Charts</h5>
+                            <p>Zoom, pan, and explore your data</p>
+                        </div>
+                        <div class="col-md-4 text-center mb-4">
+                            <i class="bi bi-calculator feature-icon"></i>
+                            <h5 class="mt-3">Statistics</h5>
+                            <p>Automatic calculation of key metrics</p>
+                        </div>
+                    </div>
+
+                    <h3 class="mt-4">CSV File Format</h3>
+                    <p>Your CSV file should contain at minimum:</p>
+                    <ul>
+                        <li>A timestamp column (e.g., <code>timestamp_iso</code>, <code>timestamp</code>, <code>time</code>)</li>
+                        <li>An EDA data column (e.g., <code>eda_scl_usiemens</code>, <code>eda</code>)</li>
+                    </ul>
+
+                    <h3 class="mt-4">Technology Stack</h3>
+                    <p>This platform is built with:</p>
+                    <ul>
+                        <li><strong>Flask</strong> - Python web framework (translates to ASP.NET MVC)</li>
+                        <li><strong>Plotly</strong> - Interactive visualizations</li>
+                        <li><strong>Bootstrap 5</strong> - Responsive UI</li>
+                        <li><strong>Pandas</strong> - Data processing</li>
+                    </ul>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>Migration Ready:</strong> This application is structured to easily translate to ASP.NET Core MVC 
+                        with minimal code changes. Routes map to Controllers, templates to Razor Views, and data processing to Services.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

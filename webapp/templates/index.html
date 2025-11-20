@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDA Data Visualization Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #4682b4;
+            --secondary-color: #6c757d;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: white !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .upload-zone {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary-color);
+            background: #f8f9fa;
+        }
+        
+        .upload-zone i {
+            font-size: 4rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+        
+        .plot-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .alert {
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-activity"></i> EDA Visualization Platform
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-5" style="max-width: 1600px;">
+        <div class="row">
+            <div class="col-lg-11 mx-auto">
+                <h1 class="text-center mb-4">
+                    <i class="bi bi-graph-up"></i> Upload EDA Data
+                </h1>
+                <p class="text-center text-muted mb-4">
+                    Upload your CSV file containing electrodermal activity (EDA) data to visualize stress and arousal levels over time.
+                </p>
+
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="uploadZone">
+                    <i class="bi bi-cloud-upload"></i>
+                    <h4>Upload EDA Data & Video (Optional)</h4>
+                    <p class="text-muted">Drag & drop CSV file, or click to browse</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-file-earmark-spreadsheet"></i> <strong>EDA CSV File (required)</strong></label>
+                        <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('fileInput').click();">
+                            <i class="bi bi-folder2-open"></i> Choose CSV File
+                        </button>
+                        <div id="csvFileName" class="mt-2 text-success" style="display: none;">
+                            <i class="bi bi-check-circle"></i> <span id="csvFileNameText"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-camera-video"></i> <strong>Video File (optional - MP4 recommended)</strong></label>
+                        <input type="file" id="videoInput" accept="video/mp4,video/webm,video/ogg" style="display: none;">
+                        <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); document.getElementById('videoInput').click();">
+                            <i class="bi bi-film"></i> Choose MP4 Video (Optional)
+                        </button>
+                        <div id="videoFileName" class="mt-2 text-success" style="display: none;">
+                            <i class="bi bi-check-circle"></i> <span id="videoFileNameText"></span>
+                        </div>
+                        
+                        <!-- Video Start Time Input -->
+                        <div id="videoTimeOffset" class="mt-3" style="display: none; text-align: center;">
+                            <label class="form-label">
+                                <i class="bi bi-clock-history"></i> <strong>Video Start Time (Optional)</strong><br>
+                                <small class="text-muted">Auto-detected from filename if available, or enter manually</small>
+                            </label>
+                            <div class="input-group mx-auto" style="max-width: 300px;">
+                                <input type="time" class="form-control" id="videoStartTime" step="1" 
+                                       placeholder="HH:MM:SS">
+                                <span class="input-group-text">EST</span>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> Leave blank to auto-detect from filename (e.g., "2018-05-14_10_22_27")
+                            </small>
+                            
+                            <!-- Video Duration Input (fallback if metadata can't be read) -->
+                            <div class="mt-3" id="manualDurationSection" style="display: none;">
+                                <label class="form-label">
+                                    <i class="bi bi-hourglass-split"></i> <strong>Video Duration (Optional)</strong>
+                                    <small class="text-muted">- Only needed if automatic detection fails. Format: MM:SS:FF</small>
+                                </label>
+                                <div class="input-group" style="max-width: 300px;">
+                                    <input type="text" class="form-control" id="videoDurationInput" 
+                                           placeholder="05:16:00">
+                                    <span class="input-group-text">MM:SS:FF</span>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> Example: 05:16:00 for 5 minutes, 16 seconds, 0 frames (at 30fps)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success btn-lg mt-3" id="uploadButton" style="display: none;" onclick="event.stopPropagation(); uploadFiles();">
+                        <i class="bi bi-upload"></i> Upload & Visualize
+                    </button>
+                    
+                    <!-- Video Compression Tips -->
+                    <div class="mt-4 p-3" style="background: #f8f9fa; border-radius: 10px; max-width: 600px; margin: 20px auto;">
+                        <h6><i class="bi bi-lightbulb"></i> <strong>Tips for Large Video Files:</strong></h6>
+                        <ul class="small mb-0" style="text-align: left;">
+                            <li>Videos over 500MB may take 5+ minutes to upload</li>
+                            <li>Consider compressing videos before upload for faster processing</li>
+                            <li>Recommended: H.264 codec, 720p resolution, 30fps</li>
+                            <li>Free tools: HandBrake, FFmpeg, VLC Media Player</li>
+                            <li>Target size: Under 200MB for best experience</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="text-center mt-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3" id="loadingMessage">Processing your data...</p>
+                    <div class="progress mt-3" style="height: 25px; max-width: 500px; margin: 0 auto;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             id="uploadProgress" 
+                             style="width: 0%">
+                            <span id="progressText">0%</span>
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block" id="uploadSpeed"></small>
+                </div>
+
+                <!-- Error Alert -->
+                <div id="errorAlert" class="alert alert-danger mt-4" style="display: none;" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span id="errorMessage"></span>
+                </div>
+
+                <!-- Warning Alert for Large Files -->
+                <div id="warningAlert" class="alert alert-warning mt-4" style="display: none;" role="alert">
+                    <i class="bi bi-exclamation-circle"></i>
+                    <span id="warningMessage"></span>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" style="display: none;">
+                    <!-- Statistics Cards -->
+                    <div class="row mt-5">
+                        <div class="col-12 mb-3">
+                            <h3>
+                                <i class="bi bi-bar-chart"></i> Statistics for <span id="participantId"></span>
+                            </h3>
+                            <div class="text-muted">
+                                <i class="bi bi-calendar3"></i> <span id="sessionDate"></span>
+                                &nbsp;&nbsp;
+                                <i class="bi bi-clock"></i> <span id="sessionTime"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="stat-value" id="statMean">-</div>
+                                <div class="stat-label">Mean (µS)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="stat-value" id="statMax">-</div>
+                                <div class="stat-label">Max (µS)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="stat-value" id="statMin">-</div>
+                                <div class="stat-label">Min (µS)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stats-card">
+                                <div class="stat-value" id="statCount">-</div>
+                                <div class="stat-label">Data Points</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Player (if video uploaded) -->
+                    <div id="videoContainer" class="plot-container mt-4" style="display: none;">
+                        <h4 class="mb-3"><i class="bi bi-camera-video"></i> Video Playback</h4>
+                        
+                        <!-- Video format info -->
+                        <div id="videoWarning" class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>MP4 Video Support:</strong> Upload MP4 files for best browser compatibility. 
+                            The video will play synchronized with your EDA data timeline.
+                        </div>
+                        
+                        <!-- Tip Box - moved to top for better visibility -->
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <div style="padding: 8px 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 0.9rem;">
+                                    <strong><i class="bi bi-lightbulb"></i> How to use:</strong> 
+                                    Use video controls or click the chart to navigate. Everything syncs automatically.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <!-- Video Player -->
+                            <div class="col-md-8">
+                                <video id="videoPlayer" controls style="width: 100%; max-height: 500px; background: #000; border-radius: 8px;" preload="metadata">
+                                    <source id="videoSource" src="" type="video/mp4">
+                                    Your browser does not support the video tag. Please use a modern browser or convert your video to MP4 format.
+                                </video>
+                            </div>
+                            
+                            <!-- Current EDA Reading Panel - Compact -->
+                            <div class="col-md-4">
+                                <div style="padding: 15px; background: #e3f2fd; border-radius: 8px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+                                    <div style="text-align: center; margin-bottom: 15px;">
+                                        <div style="font-size: 0.75rem; color: #666; font-weight: 600; margin-bottom: 5px;">
+                                            <i class="bi bi-heart-pulse"></i> CURRENT EDA
+                                        </div>
+                                        <div id="currentEDADisplay" style="font-size: 2rem; font-weight: bold; color: #1976d2; line-height: 1;">
+                                            -- µS
+                                        </div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 0.75rem; color: #666; font-weight: 600; margin-bottom: 5px;">
+                                            <i class="bi bi-clock"></i> TIME
+                                        </div>
+                                        <div id="currentTimeDisplay" style="font-size: 1rem; color: #555; font-weight: 600; line-height: 1;">
+                                            --:--:-- --
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plot Container -->
+                    <div class="plot-container" style="margin-top: 5px;">
+                        <div id="plotDiv" style="min-height: 400px; width: 100%;"></div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> Chart shows only the EDA data that corresponds to the video duration
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const videoInput = document.getElementById('videoInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorAlert = document.getElementById('errorAlert');
+        const warningAlert = document.getElementById('warningAlert');
+        const resultsSection = document.getElementById('resultsSection');
+        
+        let selectedCSVFile = null;
+        let selectedVideoFile = null;
+        let timestampsData = [];
+        let videoOffsetSeconds = 0;  // Offset between video start and data start
+
+        // Handle CSV file selection
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedCSVFile = e.target.files[0];
+                document.getElementById('csvFileNameText').textContent = selectedCSVFile.name;
+                document.getElementById('csvFileName').style.display = 'block';
+                uploadButton.style.display = 'inline-block';
+            }
+        });
+
+        // Handle video file selection
+        videoInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedVideoFile = e.target.files[0];
+                document.getElementById('videoFileNameText').textContent = selectedVideoFile.name;
+                document.getElementById('videoFileName').style.display = 'block';
+                document.getElementById('videoTimeOffset').style.display = 'block';
+            }
+        });
+
+        // Drag and drop handlers
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                // Check if it's a CSV
+                for (let file of files) {
+                    if (file.name.endsWith('.csv')) {
+                        selectedCSVFile = file;
+                        document.getElementById('csvFileNameText').textContent = file.name;
+                        document.getElementById('csvFileName').style.display = 'block';
+                        uploadButton.style.display = 'inline-block';
+                    } else if (file.type.startsWith('video/')) {
+                        selectedVideoFile = file;
+                        document.getElementById('videoFileNameText').textContent = file.name;
+                        document.getElementById('videoFileName').style.display = 'block';
+                        document.getElementById('videoTimeOffset').style.display = 'block';
+                    }
+                }
+            }
+        });
+
+        function uploadFiles() {
+            if (!selectedCSVFile) {
+                showError('Please select a CSV file first.');
+                return;
+            }
+
+            // Check file sizes and warn if large
+            const csvSizeMB = (selectedCSVFile.size / (1024 * 1024)).toFixed(2);
+            let totalSizeMB = parseFloat(csvSizeMB);
+            
+            if (selectedVideoFile) {
+                const videoSizeMB = (selectedVideoFile.size / (1024 * 1024)).toFixed(2);
+                totalSizeMB += parseFloat(videoSizeMB);
+                
+                // Warn if video is large
+                if (videoSizeMB > 500) {
+                    showWarning(`Large video file detected (${videoSizeMB} MB). Upload may take several minutes. Consider compressing the video for faster uploads.`);
+                } else if (videoSizeMB > 100) {
+                    showWarning(`Video file is ${videoSizeMB} MB. Upload may take 1-2 minutes.`);
+                }
+            }
+
+            // Hide previous results
+            errorAlert.style.display = 'none';
+            resultsSection.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            
+            // Update loading message
+            document.getElementById('loadingMessage').textContent = 
+                selectedVideoFile ? `Uploading ${totalSizeMB.toFixed(0)} MB...` : 'Processing your data...';
+
+            // Create FormData and upload
+            const formData = new FormData();
+            formData.append('file', selectedCSVFile);
+            
+            if (selectedVideoFile) {
+                formData.append('video', selectedVideoFile);
+                
+                // Get video start time if provided
+                const videoStartTime = document.getElementById('videoStartTime').value;
+                if (videoStartTime) {
+                    formData.append('video_start_time', videoStartTime);
+                }
+                
+                // Store manual duration for later use
+                window.manualVideoDuration = document.getElementById('videoDurationInput').value;
+            }
+
+            // Create XMLHttpRequest for progress tracking
+            const xhr = new XMLHttpRequest();
+            
+            // Track upload progress
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    const uploadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
+                    const totalMB = (e.total / (1024 * 1024)).toFixed(1);
+                    
+                    document.getElementById('uploadProgress').style.width = percentComplete + '%';
+                    document.getElementById('progressText').textContent = percentComplete.toFixed(0) + '%';
+                    document.getElementById('uploadSpeed').textContent = 
+                        `Uploaded ${uploadedMB} MB of ${totalMB} MB`;
+                    
+                    if (percentComplete >= 100) {
+                        document.getElementById('loadingMessage').textContent = 'Processing data...';
+                        document.getElementById('uploadSpeed').textContent = 'Upload complete, processing...';
+                    }
+                }
+            });
+            
+            // Handle response
+            xhr.addEventListener('load', () => {
+                loadingIndicator.style.display = 'none';
+                
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    console.log('Response data:', data);
+                    
+                    if (data.error) {
+                        showError(data.error);
+                        return;
+                    }
+                    
+                    // Display results
+                    displayResults(data);
+                } else {
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        showError(errorData.error || 'Upload failed');
+                    } catch {
+                        showError('Upload failed with status: ' + xhr.status);
+                    }
+                }
+            });
+            
+            xhr.addEventListener('error', () => {
+                loadingIndicator.style.display = 'none';
+                showError('Network error during upload. Please check your connection and try again.');
+            });
+            
+            xhr.addEventListener('timeout', () => {
+                loadingIndicator.style.display = 'none';
+                showError('Upload timeout. File may be too large. Try compressing the video.');
+            });
+            
+            // Set timeout to 10 minutes for large files
+            xhr.timeout = 600000;
+            
+            // Send request
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorAlert.style.display = 'block';
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 10000);
+        }
+
+        function showWarning(message) {
+            document.getElementById('warningMessage').textContent = message;
+            warningAlert.style.display = 'block';
+            
+            // Auto-hide after 8 seconds
+            setTimeout(() => {
+                warningAlert.style.display = 'none';
+            }, 8000);
+        }
+
+        function displayResults(data) {
+            console.log('Displaying results:', data);
+            console.log('Plot HTML preview (first 200 chars):', data.plot_html.substring(0, 200));
+            
+            // Store data for video sync
+            timestampsData = data.timestamps || [];
+            videoOffsetSeconds = data.video_offset_seconds || 0;
+            
+            // Store FULL global data for video sync (unfiltered)
+            window.edaTimestampsOriginal = data.timestamps_seconds || [];  // Full dataset
+            window.edaValuesOriginal = data.eda_values || [];  // Full dataset
+            window.edaTimestampStringsOriginal = data.timestamps || [];  // Full dataset
+            
+            // These will be set after filtering to video window
+            window.edaTimestamps = data.timestamps_seconds || [];
+            window.edaValues = data.eda_values || [];
+            window.edaTimestampStrings = data.timestamps || [];
+            window.edaPlotDiv = true;
+            
+            console.log('Video offset seconds:', videoOffsetSeconds, '(' + (videoOffsetSeconds/60).toFixed(2) + ' minutes)');
+            console.log('EDA data points loaded:', window.edaValues.length);
+            console.log('Data time range:', data.stats.start_time, 'to', data.stats.end_time);
+            
+            // Update statistics
+            document.getElementById('participantId').textContent = data.participant_id;
+            document.getElementById('statMean').textContent = data.stats.mean.toFixed(3);
+            document.getElementById('statMax').textContent = data.stats.max.toFixed(3);
+            document.getElementById('statMin').textContent = data.stats.min.toFixed(3);
+            document.getElementById('statCount').textContent = data.stats.count.toLocaleString();
+            
+            // Update session info
+            if (data.stats.date) {
+                document.getElementById('sessionDate').textContent = data.stats.date;
+            }
+            if (data.stats.start_time && data.stats.end_time) {
+                document.getElementById('sessionTime').textContent = 
+                    `${data.stats.start_time} - ${data.stats.end_time}`;
+            }
+
+            // Setup video if available
+            if (data.video_url) {
+                setupVideo(data.video_url);
+                
+                // Show video info message if present
+                const videoWarning = document.getElementById('videoWarning');
+                if (videoWarning) {
+                    if (data.video_info_message) {
+                        videoWarning.style.display = 'block';
+                        videoWarning.className = 'alert alert-success';
+                        videoWarning.innerHTML = '<i class="bi bi-check-circle"></i> ' + data.video_info_message;
+                    } else if (data.video_warning) {
+                        // Show video format warning if present
+                        videoWarning.style.display = 'block';
+                        videoWarning.className = 'alert alert-info';
+                        videoWarning.innerHTML = '<i class="bi bi-info-circle"></i> ' + data.video_warning;
+                    } else {
+                        videoWarning.style.display = 'none';
+                    }
+                }
+            } else {
+                document.getElementById('videoContainer').style.display = 'none';
+            }
+
+            // Display plot - use a method that executes scripts
+            const plotDiv = document.getElementById('plotDiv');
+            console.log('Plot div element:', plotDiv);
+            console.log('Plot HTML length:', data.plot_html.length);
+            
+            // Clear any existing content first
+            plotDiv.innerHTML = '';
+            
+            // Create a temporary container and parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.plot_html;
+            
+            // Extract and execute scripts manually
+            const scripts = tempDiv.getElementsByTagName('script');
+            const scriptTexts = [];
+            for (let i = 0; i < scripts.length; i++) {
+                scriptTexts.push(scripts[i].innerHTML);
+            }
+            
+            // Add the HTML (without scripts executing)
+            plotDiv.innerHTML = data.plot_html;
+            
+            // Now execute the scripts
+            scriptTexts.forEach((scriptText, index) => {
+                console.log(`Executing script ${index + 1}/${scriptTexts.length}`);
+                try {
+                    eval(scriptText);
+                } catch (e) {
+                    console.error('Script execution error:', e);
+                }
+            });
+            
+            // Setup click event for video sync after plot is rendered
+            setTimeout(() => {
+                setupPlotClickSync();
+            }, 500);
+            
+            console.log('Plot rendering complete');
+
+            // Show results section
+            resultsSection.style.display = 'block';
+
+            // Scroll to results
+            setTimeout(() => {
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        function setupVideo(videoUrl) {
+            const videoContainer = document.getElementById('videoContainer');
+            const videoSource = document.getElementById('videoSource');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            // Detect video format from URL
+            const extension = videoUrl.split('.').pop().toLowerCase();
+            let mimeType = 'video/mp4'; // default
+            
+            if (extension === 'avi') {
+                mimeType = 'video/x-msvideo';
+            } else if (extension === 'webm') {
+                mimeType = 'video/webm';
+            } else if (extension === 'ogg') {
+                mimeType = 'video/ogg';
+            } else if (extension === 'mov') {
+                mimeType = 'video/quicktime';
+            }
+            
+            videoSource.src = videoUrl;
+            videoSource.type = mimeType;
+            videoPlayer.load();
+            videoContainer.style.display = 'block';
+            
+            // Add error handling for video loading
+            videoPlayer.addEventListener('error', function(e) {
+                console.error('Video error:', e);
+                console.error('Video error code:', videoPlayer.error ? videoPlayer.error.code : 'unknown');
+                console.error('Video error message:', videoPlayer.error ? videoPlayer.error.message : 'unknown');
+                
+                // Show helpful error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger mt-2';
+                errorDiv.innerHTML = `
+                    <i class="bi bi-exclamation-circle"></i> 
+                    <strong>Video Error:</strong> Cannot play this video format in your browser. 
+                    Please use MP4 format for best compatibility. The timeline scrubber below 
+                    will still work for synchronized EDA data.
+                `;
+                videoContainer.appendChild(errorDiv);
+            });
+            
+            // Add canplay event to confirm video loaded
+            videoPlayer.addEventListener('canplay', function() {
+                console.log('Video can play - codec supported!');
+            });
+            
+            // Setup video event listeners for syncing
+            videoPlayer.addEventListener('loadedmetadata', function() {
+                const duration = videoPlayer.duration;
+                
+                console.log('📹 Video metadata loaded');
+                console.log('   Duration from video file:', duration, 'seconds (', formatTime(duration), ')');
+                console.log('   Video offset:', videoOffsetSeconds, 'seconds (', (videoOffsetSeconds/60).toFixed(2), 'minutes)');
+                
+                // Prefer video metadata if available, otherwise use manual input
+                const manualValue = window.manualVideoDuration;
+                if (duration && !isNaN(duration) && isFinite(duration) && duration > 0) {
+                    console.log('   ✅ Using video metadata duration (most accurate)');
+                    if (manualValue && manualValue.trim() !== '') {
+                        console.log('   ℹ️ Note: Manual duration "' + manualValue + '" was provided but video metadata is being used instead');
+                    }
+                    filterAndRenderVideoWindow(duration);
+                } else if (manualValue && manualValue.trim() !== '') {
+                    console.log('   📝 Manual duration provided:', manualValue);
+                    console.log('   ⚠️ Video metadata unavailable, using manual duration');
+                    tryManualDuration();
+                } else {
+                    console.warn('   ⚠️ Video duration invalid and no manual input provided');
+                    alert('Cannot determine video duration. Please refresh and enter the duration manually in MM:SS:FF format.');
+                }
+            });
+            
+            // Fallback: Try manual duration after a delay if metadata doesn't load
+            setTimeout(function() {
+                if (!videoPlayer.duration || isNaN(videoPlayer.duration) || !isFinite(videoPlayer.duration)) {
+                    console.warn('Video metadata not loaded after timeout, using manual duration');
+                    tryManualDuration();
+                }
+            }, 3000);
+            
+            // Update EDA display as video plays/seeks
+            videoPlayer.addEventListener('timeupdate', updateEDAFromVideo);
+            videoPlayer.addEventListener('seeked', updateEDAFromVideo);
+            
+            console.log('Video loaded:', videoUrl);
+        }
+        
+        // Global variables for playback
+        let isPlaying = false;
+        let playbackInterval = null;
+        let currentTimelinePosition = 0;
+        let totalDurationSeconds = 0;
+        
+        function setupTimelineSlider() {
+            const slider = document.getElementById('timelineSlider');
+            if (!slider) return;
+            
+            // Update EDA when slider moves AND sync video player
+            slider.addEventListener('input', function() {
+                const percentage = parseFloat(this.value);
+                currentTimelinePosition = (percentage / 100) * totalDurationSeconds;
+                updateEDAFromTimeline(currentTimelinePosition);
+                
+                // Also update video player to match
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (videoPlayer && !isNaN(videoPlayer.duration) && videoPlayer.duration > 0) {
+                    videoPlayer.currentTime = currentTimelinePosition;
+                }
+            });
+        }
+        
+        function togglePlayback() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playPauseBtn');
+            const icon = document.getElementById('playIcon');
+            
+            if (isPlaying) {
+                btn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
+                startPlayback();
+            } else {
+                btn.innerHTML = '<i class="bi bi-play-fill"></i> Play';
+                stopPlayback();
+            }
+        }
+        
+        function startPlayback() {
+            // Update every 100ms (10 times per second for smooth playback)
+            playbackInterval = setInterval(function() {
+                currentTimelinePosition += 0.1; // Advance by 0.1 seconds
+                
+                if (currentTimelinePosition >= totalDurationSeconds) {
+                    currentTimelinePosition = totalDurationSeconds;
+                    togglePlayback(); // Stop at end
+                }
+                
+                // Update slider
+                const percentage = (currentTimelinePosition / totalDurationSeconds) * 100;
+                document.getElementById('timelineSlider').value = percentage;
+                
+                // Update EDA display
+                updateEDAFromTimeline(currentTimelinePosition);
+                
+                // Sync with actual video player if it's playing
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (videoPlayer && !isNaN(videoPlayer.duration)) {
+                    videoPlayer.currentTime = currentTimelinePosition;
+                }
+            }, 100);
+        }
+        
+        function stopPlayback() {
+            if (playbackInterval) {
+                clearInterval(playbackInterval);
+                playbackInterval = null;
+            }
+        }
+        
+        function seekRelative(seconds) {
+            currentTimelinePosition += seconds;
+            currentTimelinePosition = Math.max(0, Math.min(currentTimelinePosition, totalDurationSeconds));
+            
+            // Update slider
+            const percentage = (currentTimelinePosition / totalDurationSeconds) * 100;
+            document.getElementById('timelineSlider').value = percentage;
+            
+            // Update EDA display
+            updateEDAFromTimeline(currentTimelinePosition);
+            
+            // Sync with video player if available
+            const videoPlayer = document.getElementById('videoPlayer');
+            if (videoPlayer && !isNaN(videoPlayer.duration)) {
+                videoPlayer.currentTime = currentTimelinePosition;
+            }
+        }
+        
+        function resetTimeline() {
+            stopPlayback();
+            currentTimelinePosition = 0;
+            document.getElementById('timelineSlider').value = 0;
+            updateEDAFromTimeline(0);
+            
+            const btn = document.getElementById('playPauseBtn');
+            btn.innerHTML = '<i class="bi bi-play-fill"></i> Play';
+            isPlaying = false;
+            
+            // Reset video player
+            const videoPlayer = document.getElementById('videoPlayer');
+            if (videoPlayer) {
+                videoPlayer.currentTime = 0;
+            }
+        }
+        
+        function updateEDAFromTimeline(timeInSeconds) {
+            document.getElementById('sliderTime').textContent = formatTime(timeInSeconds);
+            document.getElementById('videoTime').textContent = formatTime(timeInSeconds);
+            
+            // Find the closest EDA data point
+            if (window.edaTimestamps && window.edaValues && window.edaTimestampStrings) {
+                let closestIndex = 0;
+                let minDiff = Math.abs(window.edaTimestamps[0] - timeInSeconds);
+                
+                for (let i = 1; i < window.edaTimestamps.length; i++) {
+                    const diff = Math.abs(window.edaTimestamps[i] - timeInSeconds);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIndex = i;
+                    }
+                }
+                
+                // Update current EDA display
+                const currentEDA = window.edaValues[closestIndex];
+                const currentTimestamp = window.edaTimestampStrings[closestIndex];
+                
+                // Update main display panels
+                const edaDisplay = document.getElementById('currentEDADisplay');
+                const timeDisplay = document.getElementById('currentTimeDisplay');
+                
+                if (edaDisplay) {
+                    edaDisplay.textContent = currentEDA ? currentEDA.toFixed(3) + ' µS' : '-- µS';
+                }
+                if (timeDisplay) {
+                    timeDisplay.textContent = currentTimestamp || '--:--:-- --';
+                }
+                
+                // Also update old display if it exists
+                const oldEDA = document.getElementById('currentEDA');
+                const oldTime = document.getElementById('currentTime');
+                if (oldEDA) oldEDA.textContent = currentEDA ? currentEDA.toFixed(3) : '--';
+                if (oldTime) oldTime.textContent = currentTimestamp || '--';
+                
+                // Highlight the current point on the chart
+                highlightCurrentPoint(closestIndex);
+            }
+        }
+        
+        function tryManualDuration() {
+            // Try to get the manual duration that was entered during upload
+            const manualValue = window.manualVideoDuration;
+            
+            console.log('🔍 Trying manual duration input');
+            console.log('   Manual value:', manualValue);
+            
+            if (manualValue) {
+                // Parse MM:SS:FF format (minutes:seconds:frames at 30fps)
+                const parts = manualValue.split(':');
+                console.log('   Parsed parts:', parts);
+                
+                if (parts.length === 3) {
+                    const minutes = parseInt(parts[0]) || 0;
+                    const seconds = parseInt(parts[1]) || 0;
+                    const frames = parseInt(parts[2]) || 0;
+                    const totalSeconds = minutes * 60 + seconds + (frames / 30); // 30fps
+                    
+                    console.log('   ✅ Parsed as MM:SS:FF format');
+                    console.log('   Minutes:', minutes, 'Seconds:', seconds, 'Frames:', frames);
+                    console.log('   Total duration:', totalSeconds, 'seconds (', formatTime(totalSeconds), ')');
+                    
+                    filterAndRenderVideoWindow(totalSeconds);
+                    return true;
+                } else if (parts.length === 2) {
+                    // Fallback: MM:SS format
+                    const minutes = parseInt(parts[0]) || 0;
+                    const seconds = parseInt(parts[1]) || 0;
+                    const totalSeconds = minutes * 60 + seconds;
+                    
+                    console.log('   ✅ Parsed as MM:SS format');
+                    console.log('   Minutes:', minutes, 'Seconds:', seconds);
+                    console.log('   Total duration:', totalSeconds, 'seconds (', formatTime(totalSeconds), ')');
+                    
+                    filterAndRenderVideoWindow(totalSeconds);
+                    return true;
+                }
+            }
+            
+            // If no manual duration, show alert
+            console.error('   ❌ Manual duration not found or invalid format');
+            alert('Cannot read video duration automatically. Please re-upload and enter the video duration manually in MM:SS:FF format (e.g., "05:16:00" for 5 minutes 16 seconds).');
+            return false;
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateEDAFromVideo() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            if (!videoPlayer) return;
+            
+            const currentVideoTime = videoPlayer.currentTime;
+            
+            // Find the closest EDA data point
+            // After filtering, timestamps are relative to video start (0-based)
+            if (window.edaTimestamps && window.edaValues && window.edaTimestampStrings) {
+                let closestIndex = 0;
+                let minDiff = Math.abs(window.edaTimestamps[0] - currentVideoTime);
+                
+                for (let i = 1; i < window.edaTimestamps.length; i++) {
+                    const diff = Math.abs(window.edaTimestamps[i] - currentVideoTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIndex = i;
+                    }
+                }
+                
+                // Update current EDA display
+                const currentEDA = window.edaValues[closestIndex];
+                const currentTimestamp = window.edaTimestampStrings[closestIndex];
+                
+                // Update main display panels
+                const edaDisplay = document.getElementById('currentEDADisplay');
+                const timeDisplay = document.getElementById('currentTimeDisplay');
+                
+                if (edaDisplay) {
+                    edaDisplay.textContent = currentEDA ? currentEDA.toFixed(3) + ' µS' : '-- µS';
+                }
+                if (timeDisplay) {
+                    timeDisplay.textContent = currentTimestamp || '--:--:-- --';
+                }
+                
+                console.log('Video time:', currentVideoTime.toFixed(2), 's -> EDA:', currentEDA.toFixed(3), 'at', currentTimestamp);
+                
+                // Highlight the current point on the chart
+                highlightCurrentPoint(closestIndex);
+            }
+        }
+        
+        function filterAndRenderVideoWindow(videoDuration) {
+            console.log('=== FILTERING DATA FOR VIDEO WINDOW ===');
+            console.log('📊 Input parameters:');
+            console.log('   Video duration:', videoDuration, 'seconds (', formatTime(videoDuration), ')');
+            console.log('   Video offset:', videoOffsetSeconds, 'seconds (', (videoOffsetSeconds/60).toFixed(2), 'minutes)');
+            
+            // Store total duration globally
+            totalDurationSeconds = videoDuration;
+            
+            // Use ORIGINAL unfiltered data
+            const sourceTimestamps = window.edaTimestampsOriginal || window.edaTimestamps;
+            const sourceValues = window.edaValuesOriginal || window.edaValues;
+            const sourceStrings = window.edaTimestampStringsOriginal || window.edaTimestampStrings;
+            
+            if (!sourceTimestamps || !sourceValues || !sourceStrings) {
+                console.error('No EDA data available to filter');
+                return;
+            }
+            
+            // Calculate the time window in the ORIGINAL data timeline
+            // videoOffsetSeconds = how many seconds after data start did video start
+            const videoStartInData = videoOffsetSeconds;
+            const videoEndInData = videoOffsetSeconds + videoDuration;
+            
+            console.log('🎯 Data window calculation:');
+            console.log('   Video starts at:', videoStartInData.toFixed(2), 'seconds from data start');
+            console.log('   Video ends at:', videoEndInData.toFixed(2), 'seconds from data start');
+            console.log('   Window size:', videoDuration.toFixed(2), 'seconds');
+            console.log('   Total data points available:', sourceTimestamps.length);
+            
+            // Filter the data to only the video window
+            const filteredData = {
+                timestamps: [],
+                timestampStrings: [],
+                values: [],
+                indices: []
+            };
+            
+            for (let i = 0; i < sourceTimestamps.length; i++) {
+                const timeInSeconds = sourceTimestamps[i];
+                if (timeInSeconds >= videoStartInData && timeInSeconds <= videoEndInData) {
+                    // Store as relative to VIDEO start (0-based for video sync)
+                    filteredData.timestamps.push(timeInSeconds - videoStartInData);
+                    filteredData.timestampStrings.push(sourceStrings[i]);
+                    filteredData.values.push(sourceValues[i]);
+                    filteredData.indices.push(i);
+                }
+            }
+            
+            console.log('✅ Filtering complete:');
+            console.log('   Filtered data points:', filteredData.values.length);
+            console.log('   First timestamp:', filteredData.timestampStrings[0]);
+            console.log('   Last timestamp:', filteredData.timestampStrings[filteredData.timestampStrings.length - 1]);
+            console.log('   First relative time:', filteredData.timestamps[0].toFixed(2), 's');
+            console.log('   Last relative time:', filteredData.timestamps[filteredData.timestamps.length - 1].toFixed(2), 's');
+            
+            if (filteredData.values.length === 0) {
+                console.error('No data points in video window! Check your video start time and duration.');
+                alert('No EDA data found in the video time window. Please check:\n' + 
+                      '1. Video start time is correct (currently: ' + (videoOffsetSeconds/60).toFixed(2) + ' minutes after data start)\n' +
+                      '2. Video duration is correct (currently: ' + formatTime(videoDuration) + ')');
+                return;
+            }
+            
+            // Update global data to filtered version
+            window.edaTimestamps = filteredData.timestamps;
+            window.edaValues = filteredData.values;
+            window.edaTimestampStrings = filteredData.timestampStrings;
+            
+            // Calculate new stats
+            const mean = filteredData.values.reduce((a, b) => a + b, 0) / filteredData.values.length;
+            const max = Math.max(...filteredData.values);
+            const min = Math.min(...filteredData.values);
+            
+            // Update stats display
+            document.getElementById('statMean').textContent = mean.toFixed(3);
+            document.getElementById('statMax').textContent = max.toFixed(3);
+            document.getElementById('statMin').textContent = min.toFixed(3);
+            document.getElementById('statCount').textContent = filteredData.values.length.toLocaleString();
+            
+            // Initialize current EDA display panels with first value
+            if (filteredData.values.length > 0) {
+                const edaDisplay = document.getElementById('currentEDADisplay');
+                const timeDisplay = document.getElementById('currentTimeDisplay');
+                
+                if (edaDisplay) {
+                    edaDisplay.textContent = filteredData.values[0].toFixed(3) + ' µS';
+                }
+                if (timeDisplay) {
+                    timeDisplay.textContent = filteredData.timestampStrings[0];
+                }
+                
+                console.log('Initial EDA value:', filteredData.values[0].toFixed(3), 'at', filteredData.timestampStrings[0]);
+            }
+            
+            // Re-render the plot with filtered data
+            renderFilteredPlot(filteredData, mean, min, max);
+        }
+        
+        function renderFilteredPlot(data, mean, min, max) {
+            // Check if Plotly is loaded
+            if (typeof Plotly === 'undefined') {
+                console.warn('⚠️ Plotly not loaded yet, waiting...');
+                setTimeout(() => renderFilteredPlot(data, mean, min, max), 100);
+                return;
+            }
+            
+            // The backend plot creates a div with ID 'plotly-chart' inside 'plotDiv'
+            // We need to find it or use plotDiv directly
+            let plotDiv = document.getElementById('plotly-chart');
+            
+            // If plotly-chart doesn't exist yet, look for it inside plotDiv
+            if (!plotDiv) {
+                const container = document.getElementById('plotDiv');
+                if (container) {
+                    // Check if there's already a plotly div inside
+                    const existingPlot = container.querySelector('.plotly-graph-div');
+                    if (existingPlot) {
+                        plotDiv = existingPlot;
+                    } else {
+                        // Create the plotly-chart div
+                        plotDiv = document.createElement('div');
+                        plotDiv.id = 'plotly-chart';
+                        plotDiv.style.width = '100%';
+                        plotDiv.style.height = '400px';
+                        container.innerHTML = '';
+                        container.appendChild(plotDiv);
+                    }
+                }
+            }
+            
+            if (!plotDiv) {
+                console.error('Plot div not found - cannot render filtered plot');
+                return;
+            }
+            
+            console.log('Rendering filtered plot to:', plotDiv.id);
+            
+            // Create x-axis labels showing seconds from video start
+            const xAxisLabels = data.timestamps.map(t => t.toFixed(1) + 's');
+            
+            // Create new Plotly trace with custom hover data
+            const trace = {
+                x: xAxisLabels,
+                y: data.values,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'EDA Signal',
+                line: { color: 'steelblue', width: 2 },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(70, 130, 180, 0.2)',
+                customdata: data.timestampStrings,
+                hovertemplate: '<b>Video Time:</b> %{x}<br><b>Clock Time:</b> %{customdata}<br><b>EDA:</b> %{y:.3f} µS<extra></extra>'
+            };
+            
+            const layout = {
+                title: {
+                    text: 'Electrodermal Activity',
+                    font: { size: 16 },
+                    y: 0.98,  // Position title closer to top
+                    yanchor: 'top'
+                },
+                xaxis: { 
+                    title: 'Time from Video Start (seconds)',
+                    tickangle: -45,
+                    type: 'category',  // Treat timestamps as categories to show all of them
+                    nticks: 20  // Show approximately 20 tick marks
+                },
+                yaxis: { title: 'EDA (µSiemens)' },
+                hovermode: 'x unified',
+                template: 'plotly_white',
+                height: 400,
+                margin: { l: 50, r: 50, t: 50, b: 50 },  // Reduced top margin from 100 to 50
+                shapes: [{
+                    type: 'line',
+                    y0: mean,
+                    y1: mean,
+                    x0: 0,
+                    x1: 1,
+                    xref: 'paper',
+                    line: {
+                        color: 'red',
+                        width: 2,
+                        dash: 'dash'
+                    }
+                }]
+            };
+            
+            Plotly.newPlot(plotDiv, [trace], layout, { responsive: true });
+            
+            console.log('✅ Plot re-rendered with filtered data:', data.values.length, 'points');
+            console.log('   Time range:', data.timestampStrings[0], 'to', data.timestampStrings[data.timestampStrings.length - 1]);
+        }
+        
+        function highlightCurrentPoint(index) {
+            // Check if Plotly is loaded
+            if (typeof Plotly === 'undefined') {
+                console.warn('⚠️ Plotly not loaded yet, skipping highlight');
+                return;
+            }
+            
+            // Add a vertical line on the plot to show current position
+            if (window.edaPlotDiv) {
+                const update = {
+                    shapes: [{
+                        type: 'line',
+                        x0: index,
+                        x1: index,
+                        y0: 0,
+                        y1: 1,
+                        yref: 'paper',
+                        line: {
+                            color: 'red',
+                            width: 2,
+                            dash: 'dot'
+                        }
+                    }]
+                };
+                
+                Plotly.relayout('plotly-chart', update);
+            }
+        }
+
+        function setupPlotClickSync() {
+            const plotlyDiv = document.getElementById('plotly-chart');
+            if (!plotlyDiv) {
+                console.log('⚠️ Plotly div not found yet, will retry...');
+                return;
+            }
+
+            plotlyDiv.on('plotly_click', function(data) {
+                const pointIndex = data.points[0].pointIndex;
+                const videoPlayer = document.getElementById('videoPlayer');
+                
+                if (videoPlayer && videoPlayer.duration) {
+                    // The filtered data uses timestamps relative to video start (0-based)
+                    // So we can directly use the timestamp value as the video time
+                    let videoTime;
+                    
+                    if (window.edaTimestamps && window.edaTimestamps[pointIndex] !== undefined) {
+                        // Use the actual timestamp from our filtered data (already in seconds from video start)
+                        videoTime = window.edaTimestamps[pointIndex];
+                    } else {
+                        console.warn('Point index out of bounds:', pointIndex);
+                        return;
+                    }
+                    
+                    // Make sure we don't seek past video duration or before 0
+                    const seekTime = Math.max(0, Math.min(videoTime, videoPlayer.duration));
+                    
+                    videoPlayer.currentTime = seekTime;
+                    console.log(`📍 Clicked point ${pointIndex}: Seeking video to ${seekTime.toFixed(2)}s`);
+                    
+                    // Add a brief glow effect to video container (without scrolling)
+                    const videoContainer = document.getElementById('videoContainer');
+                    if (videoContainer) {
+                        videoContainer.style.boxShadow = '0 0 20px rgba(70, 130, 180, 0.5)';
+                        setTimeout(() => {
+                            videoContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        }, 1000);
+                    }
+                }
+            });
+            
+            console.log('✅ Plot click sync enabled - click any point on the chart to seek the video!');
+        }
+    </script>
+</body>
+</html>
